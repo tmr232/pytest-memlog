@@ -11,72 +11,132 @@ Pytest flags & config can be used to:
     1. Set measurement interval
     2. Log measurements to file
 """
-import contextlib
+import json
 import multiprocessing
 import multiprocessing.connection
 import os
-import threading
 import time
+from pathlib import Path
+from typing import Optional
 
-import pandas as pd
+import attrs
 import psutil
 
-
-def memlog(pid: int, interval:float=0.1) -> None:
-    process = psutil.Process(pid)
-
-    log = []
-
-    while True:
-        log.append(
-            {
-                "rss": process.memory_info().rss,
-                "time": time.monotonic(),
-            }
-        )
-        time.sleep(interval)
+# TODO: Consider switching to standard dataclasses to reduce library dependencies.
+@attrs.frozen
+class BeginTest:
+    name: str
 
 
-def _measure_memory(
-    conn: multiprocessing.connection.Connection,
-    start: threading.Event,
-    stop: threading.Event,
+@attrs.frozen
+class EndTest:
+    pass
+
+
+@attrs.frozen
+class MaxRss:
+    max_rss: int
+
+
+@attrs.frozen
+class Close:
+    pass
+
+
+def memlog(
     pid: int,
+    conn: multiprocessing.connection.Connection,
+    interval: float = 0.1,
+    logpath: Optional[Path] = None,
 ) -> None:
     process = psutil.Process(pid)
-    start_rss = process.memory_info().rss
-    start.set()
+
     log = []
-    start_time = time.monotonic()
-    while not stop.is_set():
+    max_rss = 0
+    name = ""
+    while True:
+        rss = process.memory_info().rss
         log.append(
-            [time.monotonic() - start_time, process.memory_info().rss - start_rss]
+            {
+                "rss": rss,
+                "time": time.monotonic(),
+                "name": name,
+            }
         )
-        time.sleep(0.1)
-    conn.po
-    conn.send(log)
-    conn.close()
+
+        # Maintain the maximum value seen
+        max_rss = max(max_rss, rss)
+
+        if conn.poll():
+            command = conn.recv()
+
+            if isinstance(command, BeginTest):
+                # We measure max-memory on a per-test basis.
+                max_rss = 0
+                name = command.name
+            elif isinstance(command, EndTest):
+                # No test == no name
+                name = ""
+                # Report the test memory usage
+                conn.send(MaxRss(max_rss))
+            elif isinstance(command, Close):
+                break
+            else:
+                # This should never happen
+                raise RuntimeError(f"Unsupported command: {command!r}")
+
+        time.sleep(interval)
+
+    if logpath:
+        with logpath.open("w") as f:
+            json.dump(log, f, indent=4)
 
 
-@contextlib.contextmanager
-def track_memory():
-    parent_conn, child_conn = multiprocessing.Pipe(False)
-    stop = multiprocessing.Event()
-    start = multiprocessing.Event()
+class Memlog:
+    conn: multiprocessing.connection.Connection
+    memlog_process: multiprocessing.Process
 
-    process = multiprocessing.Process(
-        target=_measure_memory, args=(child_conn, start, stop, os.getpid())
-    )
-    process.start()
+    def __init__(self, interval: float = 0.1, logpath: Optional[Path] = None):
+        self.conn, child_conn = multiprocessing.Pipe(True)
+        self.memlog_process = multiprocessing.Process(
+            target=memlog,
+            kwargs={
+                "pid": os.getpid(),
+                "conn": child_conn,
+                "interval": interval,
+                "logpath": logpath,
+            },
+        )
 
-    start.wait(10)
+    def begin_test(self, name: str) -> None:
+        self.conn.send(BeginTest(name=name))
 
-    df = None
+    def end_test(self) -> int:
+        self.conn.send(EndTest())
 
-    try:
-        yield lambda: df
-    finally:
-        stop.set()
-        process.join(timeout=5)
-        log = parent_conn.recv()
-        df = pd.DataFrame(log, columns=["timestamp", "rss"])
+        response = self.conn.recv()
+        assert isinstance(response, MaxRss)
+
+        return response.max_rss
+
+    def __enter__(self):
+        self.memlog_process.start()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        # We use a Close command instead of closing the pipe because closing the pipe
+        # causes a BrokenPipeError, and handling a Close command is cleaner.
+        self.conn.send(Close())
+        self.memlog_process.join()
+        return False
+
+
+def main():
+    with Memlog() as ml:
+        ml.begin_test("Hello, World!")
+        time.sleep(2)
+        print(ml.end_test())
+
+
+if __name__ == "__main__":
+    main()
