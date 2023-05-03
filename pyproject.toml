@@ -17,8 +17,10 @@ repository = "https://github.com/tmr232/pytest-memlog/"
 memlog = "pytest_memlog.plugin"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.8"
 psutil = "^5.9.5"
+pytest = "^7.3.0"
+
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.0.261"
@@ -26,7 +28,6 @@ black = "^23.3.0"
 isort = "^5.12.0"
 nox = "^2022.11.21"
 mypy = "^1.2.0"
-pytest = "^7.3.0"
 pytest-cov = "^4.0.0"
 types-psutil = "^5.9.5.12"
 

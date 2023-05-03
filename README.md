@@ -54,7 +54,7 @@ Each log entry is of the following form:
 
 The visualization at the top was generated using the data from our examples.
 
-You can see how in the [sample notebook](Example.ipynb) or [view it live](https://nbviewer.org/github/tmr232/pytest-memlog/blob/main/Example.ipynb).
+You can see how in the [sample notebook](https://github.com/tmr232/pytest-memlog/blob/main/Example.ipynb) or [view it live](https://nbviewer.org/github/tmr232/pytest-memlog/blob/main/Example.ipynb).
 
 To generate the log for the examples run:
 
