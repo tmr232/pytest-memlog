@@ -2,7 +2,7 @@
 
 Continuously logs the memory usage of your test session.
 
-![Memlog graph of the example tests](example.png)
+![Memlog graph of the example tests](https://github.com/tmr232/pytest-memlog/raw/main/example.png)
 
 ## Installation
 
