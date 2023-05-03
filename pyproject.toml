@@ -23,6 +23,12 @@ pytest-cov = "^4.0.0"
 types-psutil = "^5.9.5.12"
 
 
+
+[tool.poetry.group.plot.dependencies]
+altair = "^4.2.2"
+pandas = "^2.0.1"
+jupyterlab = "^3.6.3"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
@@ -51,5 +57,5 @@ testpaths = [
 ]
 
 [tool.ruff]
-# Avoid removal of unused variables
+# Avoid automatic removal of unused variables
 unfixable = ['F841'] # unused-variable

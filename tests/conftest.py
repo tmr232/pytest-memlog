@@ -80,6 +80,11 @@ class Close:
     pass
 
 
+@attrs.frozen
+class Ready:
+    pass
+
+
 if sys.platform != "win32":
     _Connection = multiprocessing.connection.Connection
 else:
@@ -92,6 +97,8 @@ def memlog(
     interval: float = 0.1,
     logpath: Optional[Path] = None,
 ) -> None:
+    conn.send(Ready())
+
     process = psutil.Process(pid)
 
     log = []
@@ -164,6 +171,9 @@ class Memlog:
 
     def __enter__(self):
         self.process.start()
+        message = self.conn.recv()
+        if not isinstance(message, Ready):
+            raise RuntimeError(f"Expected {Ready}, got {type(message)}.")
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -183,8 +193,11 @@ def memlog_session(request: pytest.FixtureRequest):
 
     logpath = request.config.getoption("memlog-path")
     interval = request.config.getoption("memlog-interval")
+    warmup = request.config.getoption("memlog-warmup")
 
     with Memlog(logpath=logpath, interval=interval) as ml:
+        # Allow memlog to capture a baseline before starting the tests.
+        time.sleep(warmup)
         yield ml
 
 
@@ -234,6 +247,7 @@ def memlog_me(request: pytest.FixtureRequest, memlog_session: Optional[Memlog]):
         return
 
     memlog_session.begin_test(request.node.nodeid)
+
     try:
         yield
     finally:
@@ -286,6 +300,15 @@ def pytest_addoption(parser):
         metavar="SECONDS",
         default=0.1,
         help="Interval between memory samples.",
+        type=float,
+    )
+    parser.addoption(
+        "--memlog-warmup",
+        dest="memlog-warmup",
+        action="store",
+        metavar="SECONDS",
+        default=0,
+        help="Time to wait between starting the memlog process and the first test.",
         type=float,
     )
 
