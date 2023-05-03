@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pytest-memlog"
-version = "0.1.0"
+version = "0.1.0a1"
 description = "Log memory usage during tests"
 authors = ["Tamir Bahar"]
 license = "MIT"
@@ -10,6 +10,8 @@ classifiers = [
     "Framework :: Pytest"
     ]
 
+[tool.poetry.urls]
+repository = "https://github.com/tmr232/pytest-memlog/"
 
 [tool.poetry.plugins.pytest11]
 memlog = "pytest_memlog.plugin"
