@@ -58,6 +58,6 @@ import pandas as pd
 memlog = pd.read_json("memlog.json")
 ```
 
-For a bit more, check the [sample notebook](Example.ipynb):
+For a bit more, check the [sample notebook](https://nbviewer.org/github/tmr232/pytest-memlog/blob/main/Example.ipynb):
 
 ![Memlog graph of the example tests](example.png)
