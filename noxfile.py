@@ -1,7 +1,7 @@
 import nox
 from nox import Session
 
-SOURCE_LOCATIONS = ("src", "tests", "noxfile.py")
+SOURCE_LOCATIONS = ("src", "tests", "noxfile.py", "examples")
 
 nox.options.sessions = ["format", "lint", "test"]
 

@@ -6,36 +6,35 @@ from typing import List
 
 @dataclass
 class LogEntry:
-    rss:int
-    time:float
-    name:str
+    rss: int
+    time: float
+    name: str
 
-def load_memlog(logpath:Path)->List[LogEntry]:
+
+def load_memlog(logpath: Path) -> List[LogEntry]:
     with logpath.open() as f:
         log_json = json.load(f)
 
     log = [LogEntry(**entry) for entry in log_json]
 
     return log
+
+
 def test_log(pytester, tmp_path):
     """Ensure we only log marked tests."""
     example_file = pytester.copy_example("examples/test_example.py")
-    pytester.makepyfile(__init__ = "")
-
+    pytester.makepyfile(__init__="")
 
     items = pytester.getitems(example_file)
-    logged_id, ignored_id = [item.nodeid for item in items]
 
     logpath = tmp_path / "memlog.json"
 
-    result = pytester.runpytest("-s", "--memlog-path" ,logpath)
+    result = pytester.runpytest("-s", "--memlog", "--memlog-path", logpath)
     result.assert_outcomes(passed=2)
 
     log = load_memlog(logpath)
 
-    test_names = {entry.name for entry in log}
+    # Make sure we ignore the non-test samples
+    test_names = {entry.name for entry in log} - {""}
 
-
-    assert logged_id in test_names
-    assert ignored_id not in test_names
-
+    assert {item.nodeid for item in items} == test_names

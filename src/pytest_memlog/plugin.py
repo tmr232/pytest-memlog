@@ -46,7 +46,7 @@ References:
 """
 import time
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
 import pytest
 
@@ -54,7 +54,7 @@ from pytest_memlog.formatting import format_memory, parse_memory_string
 from pytest_memlog.memlog import Memlog
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session", autouse=True)
 def memlog_session(request: pytest.FixtureRequest):
     # If memlog is disabled, don't do anything.
     if not request.config.getoption("memlog"):
@@ -71,7 +71,7 @@ def memlog_session(request: pytest.FixtureRequest):
         yield ml
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def memlog_me(request: pytest.FixtureRequest, memlog_session: Optional[Memlog]):
     if memlog_session is None:
         yield
@@ -96,23 +96,9 @@ def memlog_me(request: pytest.FixtureRequest, memlog_session: Optional[Memlog]):
 
 def pytest_addoption(parser):
     parser.addoption(
-        "--memlog-all",
-        dest="memlog-all",
-        action="store_true",
-        help="Run memlog for all tests.",
-    )
-
-    parser.addoption(
-        "--memlog-only",
-        dest="memlog-only",
-        action="store_true",
-        help="Run only memlog tests, and collect their data.",
-    )
-
-    parser.addoption(
-        "--no-memlog",
+        "--memlog",
         dest="memlog",
-        action="store_false",
+        action="store_true",
         help="Disable memlog.",
     )
 
@@ -125,6 +111,7 @@ def pytest_addoption(parser):
         default="memlog.json",
         type=Path,
     )
+
     parser.addoption(
         "--memlog-interval",
         dest="memlog-interval",
@@ -134,6 +121,7 @@ def pytest_addoption(parser):
         help="Interval between memory samples.",
         type=float,
     )
+
     parser.addoption(
         "--memlog-warmup",
         dest="memlog-warmup",
@@ -151,24 +139,3 @@ def pytest_configure(config):
         "markers",
         "limit_memory(memory): mark the test to fail if exceeding the memory limit.",
     )
-
-    config.addinivalue_line(
-        "markers",
-        "memlog: include the test in memlog runs, and log the test name in the logs.",
-    )
-
-
-@pytest.hookimpl(trylast=True)
-def pytest_collection_modifyitems(config: pytest.Config, items: List[pytest.Item]):
-    """
-    Check if any tests are marked to use the mock.
-    """
-    skip_not_memlog = pytest.mark.skip(
-        reason="Need memlog marker to run with --memlog-only option."
-    )
-    for item in items:
-        if config.getoption("memlog-all") or item.get_closest_marker("memlog"):
-            item.fixturenames.append("memlog_me")  # type: ignore[attr-defined]
-
-        elif config.getoption("memlog-only") and not item.get_closest_marker("memlog"):
-            item.add_marker(skip_not_memlog)
