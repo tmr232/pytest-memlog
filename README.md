@@ -1,6 +1,8 @@
 # pytest-memlog
 
-Log memory usage during tests.
+Continuously logs the memory usage of your test session.
+
+![Memlog graph of the example tests](example.png)
 
 ## Installation
 
@@ -50,14 +52,14 @@ Each log entry is of the following form:
 
 ## Analysis
 
-The format makes loading the data using pandas straightforward:
+The visualization at the top was generated using the data from our examples.
 
-```python
-import pandas as pd
+You can see how in the [sample notebook](Example.ipynb) or [view it live](https://nbviewer.org/github/tmr232/pytest-memlog/blob/main/Example.ipynb).
 
-memlog = pd.read_json("memlog.json")
+To generate the log for the examples run:
+
+```shell
+pytest --memlog ./examples/
 ```
 
-For a bit more, check the [sample notebook](https://nbviewer.org/github/tmr232/pytest-memlog/blob/main/Example.ipynb):
-
-![Memlog graph of the example tests](example.png)
+Or use it on your own tests!
