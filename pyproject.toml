@@ -5,12 +5,18 @@ description = "Log memory usage during tests"
 authors = ["Tamir Bahar"]
 license = "MIT"
 readme = "README.md"
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Framework :: Pytest"
+    ]
 
+
+[tool.poetry.plugins.pytest11]
+memlog = "pytest_memlog.plugin"
 
 [tool.poetry.dependencies]
 python = "^3.11"
 psutil = "^5.9.5"
-attrs = "^23.1.0"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.0.261"
