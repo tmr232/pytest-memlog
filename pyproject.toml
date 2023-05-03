@@ -60,7 +60,7 @@ python_version = "3.8"
 
 [tool.pytest.ini_options]
 xfail_strict = true
-#addopts = "-ra -q --cov=pytest_memlog --cov-report=xml --cov-report=term-missing --memlog-all"
+addopts = "-ra -q --cov=pytest_memlog --cov-report=xml --cov-report=term-missing"
 testpaths = [
     "tests",
 ]
