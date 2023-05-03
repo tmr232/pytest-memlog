@@ -122,6 +122,7 @@ def pytest_addoption(parser):
         action="store",
         metavar="FILEPATH",
         help="Path to store the memlog JSON log.",
+        default="memlog.json",
         type=Path,
     )
     parser.addoption(

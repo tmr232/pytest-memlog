@@ -13,3 +13,10 @@ dist/
 # IDE settings
 .vscode/
 .idea/
+
+# Coverage
+/.coverage
+/coverage.xml
+
+# Memlog
+/memlog.json

@@ -1,30 +1,41 @@
-import time
-
-import pytest
-
-
-def test_0():
-    time.sleep(1)
+import json
+from dataclasses import dataclass
+from pathlib import Path
+from typing import List
 
 
-def test_1():
-    x = [1] * 100  # noqa: unused-variable
-    time.sleep(1)
+@dataclass
+class LogEntry:
+    rss:int
+    time:float
+    name:str
+
+def load_memlog(logpath:Path)->List[LogEntry]:
+    with logpath.open() as f:
+        log_json = json.load(f)
+
+    log = [LogEntry(**entry) for entry in log_json]
+
+    return log
+def test_log(pytester, tmp_path):
+    """Ensure we only log marked tests."""
+    example_file = pytester.copy_example("examples/test_example.py")
+    pytester.makepyfile(__init__ = "")
 
 
-x = []
+    items = pytester.getitems(example_file)
+    logged_id, ignored_id = [item.nodeid for item in items]
+
+    logpath = tmp_path / "memlog.json"
+
+    result = pytester.runpytest("-s", "--memlog-path" ,logpath)
+    result.assert_outcomes(passed=2)
+
+    log = load_memlog(logpath)
+
+    test_names = {entry.name for entry in log}
 
 
-@pytest.mark.parametrize("size", [1 << x for x in range(10, 30, 4)])
-def test_mem(size):
-    global x
-    x = [1 for _ in range(size)]
-    time.sleep(1)
+    assert logged_id in test_names
+    assert ignored_id not in test_names
 
-
-def test_more():
-    # time.sleep(1)
-    a = list(range(100000000))  # noqa: unused-variable
-    time.sleep(1)
-    a = []  # noqa: unused-variable
-    time.sleep(1)
